@@ -130,7 +130,7 @@ export const SignIn = () => {
                         {loading ? <CircularProgress size={24} /> : 'Sign In'}
                     </StyledButton>
                 </Box>
-                <Typography sx={{ paddingTop: "35px" }}>Don't have an account?</Typography>
+                <Typography sx={{ paddingTop: "35px" }}>Don&apos;t have an account?</Typography>
                 <Button
                     fullWidth
                     variant='text'
