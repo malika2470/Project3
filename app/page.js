@@ -42,7 +42,7 @@ export default function Home() {
         },
       ])
     }
-  }, [user]);
+  }, [user, userSession]); // Include userSession here
 
 
   const [message, setMessage] = useState("");
@@ -239,5 +239,4 @@ export default function Home() {
     </Box>
   );
 }
-
 
