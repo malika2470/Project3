@@ -1,4 +1,7 @@
-import 'dotenv/config';  // Add this line at the very top
+require('dotenv').config();
+
+console.log("Environment Variables:", process.env);
+
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
 import { detectLanguage, translateText } from '../../../lib/translation';
