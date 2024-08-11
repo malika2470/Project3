@@ -2,6 +2,8 @@ import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
 import { detectLanguage, translateText } from '../../../lib/translation';
 
+console.log("OpenAI API Key:", process.env.NEXT_PUBLIC_OPENAI_API_KEY);
+
 const openai = new OpenAI({
   apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
 });
@@ -80,4 +82,3 @@ export const POST = async (req) => {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 };
-
