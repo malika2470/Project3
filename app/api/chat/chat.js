@@ -1,97 +1,109 @@
 import { useState } from 'react';
-const nodemailer = require('nodemailer');
-require('dotenv').config();
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const keywords = ["login", "account", "password", "support", "billing", "error", "help", "refund"];
 
-const [count, setCount] = useState(0);
-const [startTime, setStartTime] = useState(Date.now());
-const [isComplex, setIsComplex] = useState(false);
-const [msgs, setMsgs] = useState([]);
-const [showHuman, setShowHuman] = useState(false);
+function ChatComponent() {
+  const [count, setCount] = useState(0);
+  const [startTime, setStartTime] = useState(Date.now());
+  const [isComplex, setIsComplex] = useState(false);
+  const [msgs, setMsgs] = useState([]);
+  const [showHuman, setShowHuman] = useState(false);
 
-const sendEmail = async (email, ticketId) => {
+  const sendEmail = async (email, ticketId) => {
     let transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        }
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
     });
 
     let mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: `Ticket Created - ID: ${ticketId}`,
-        text: `A ticket with ID: ${ticketId} has been created. Our team will contact you soon.`
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: `Ticket Created - ID: ${ticketId}`,
+      text: `A ticket with ID: ${ticketId} has been created. Our team will contact you soon.`
     };
 
     try {
-        await transporter.sendMail(mailOptions);
-        console.log('Email sent.');
+      await transporter.sendMail(mailOptions);
+      console.log('Email sent.');
     } catch (error) {
-        console.error('Email error:', error);
+      console.error('Email error:', error);
     }
-};
+  };
 
-const handleMsg = (msg) => {
+  const handleMsg = (msg) => {
     if (isSameTopic(msg)) {
-        setCount(count + 1);
+      setCount(count + 1);
     } else {
-        setCount(0);
-        setStartTime(Date.now());
+      setCount(0);
+      setStartTime(Date.now());
     }
 
     if (count > 2 || (Date.now() - startTime) > 180000) {
-        setIsComplex(true);
+      setIsComplex(true);
     }
 
     processMsg(msg);
 
     if (isComplex) {
-        handleComplex();
+      handleComplex();
     }
-};
+  };
 
-const isSameTopic = (msg) => {
+  const isSameTopic = (msg) => {
     const content = msg.toLowerCase();
     return keywords.some(keyword => content.includes(keyword));
-};
+  };
 
-const genTicketId = () => {
+  const genTicketId = () => {
     return Math.floor(Math.random() * 1000000).toString();
-}
+  }
 
-const handleComplex = async () => {
+  const handleComplex = async () => {
     const ticketId = genTicketId();
     const ticketResponse = { id: ticketId };
 
     setMsgs((prevMsgs) => [
-        ...prevMsgs,
-        { role: 'assistant', content: `This issue may need human help. Ticket (ID: ${ticketResponse.id}) created. Want to chat with a human agent?` },
+      ...prevMsgs,
+      { role: 'assistant', content: `This issue may need human help. Ticket (ID: ${ticketResponse.id}) created. Want to chat with a human agent?` },
     ]);
 
     await sendEmail(process.env.EMAIL_USER, ticketResponse.id);
     setShowHuman(true);
-};
+  };
 
-const processMsg = (msg) => {
+  const processMsg = (msg) => {
     const normalizedMsg = msg.trim().toLowerCase();
 
     if (normalizedMsg.includes('help')) {
-        setMsgs((prevMsgs) => [
-            ...prevMsgs,
-            { role: 'assistant', content: 'It seems like you need help. How can I assist you further?' },
-        ]);
+      setMsgs((prevMsgs) => [
+        ...prevMsgs,
+        { role: 'assistant', content: 'It seems like you need help. How can I assist you further?' },
+      ]);
     } else if (normalizedMsg.includes('status')) {
-        setMsgs((prevMsgs) => [
-            ...prevMsgs,
-            { role: 'assistant', content: 'Let me check the status for you...' },
-        ]);
+      setMsgs((prevMsgs) => [
+        ...prevMsgs,
+        { role: 'assistant', content: 'Let me check the status for you...' },
+      ]);
     } else {
-        setMsgs((prevMsgs) => [
-            ...prevMsgs,
-            { role: 'assistant', content: 'I’m not sure I understand. Can you please clarify?' },
-        ]);
+      setMsgs((prevMsgs) => [
+        ...prevMsgs,
+        { role: 'assistant', content: 'I’m not sure I understand. Can you please clarify?' },
+      ]);
     }
-};
+  };
+
+  return (
+    <div>
+      {/* Your component JSX here */}
+    </div>
+  );
+}
+
+export default ChatComponent;
