@@ -1,6 +1,10 @@
-import { Content } from "next/font/google";
-import { NextResponse } from "next/server";
-import { OpenAI } from "openai";
+import { OpenAI } from 'openai';
+import { NextResponse } from 'next/server';
+import { detectLanguage, translateText } from '../../../lib/translation';
+
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 
 const systemPrompt = `You are a customer support bot for TechStore, an online technology retailer. Your primary function is to assist customers with their inquiries about products, orders, returns, and general store information.
 
@@ -36,55 +40,44 @@ Limitations:
 
 If unable to answer a query, politely inform the customer and suggest contacting customer support or visiting the Help Center.
 
-By following these guidelines, you will provide excellent customer service and contribute to TechStore's success.`
+By following these guidelines, you will provide excellent customer service and contribute to TechStore's success.`;
 
-// creating the API request 
-export async function POST(req) {
-    const openai = new OpenAI();
-    const data = await req.json();
-    //created whenever the completion of openai is done reading the message:
+export const POST = async (req) => {
+  try {
+    const { message, targetLanguage } = await req.json();
+
+    console.log('Original message:', message);
+    console.log('Target language:', targetLanguage);
+
+    // Detect the original language of the message
+    const originalLanguage = await detectLanguage(message);
+    console.log('Detected original language:', originalLanguage);
+
+    // Translate the message to English
+    const translatedMessage = await translateText(message, 'en');
+    console.log('Translated message:', translatedMessage);
+
+    // Generate a response from OpenAI with system prompt
     const completion = await openai.chat.completions.create({
-        messages: [
-            {
-                role: 'system',
-                content: systemPrompt,
-            },
-            //unpacking all the rest of your data
-            ...data,
-        ],
-        model: "gpt-4o-mini",
-        stream: true,
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: translatedMessage },
+      ],
     });
-    //display output of the contents of the stream
-    const stream = new ReadableStream({
-        // how the stream will start:
-        async start(controller) {
-            //encoding the text
-            const encoder = new TextEncoder();
-            try {
-                //open AI sends message through chunks and awaiting those messages
-                for await (const chunks of completion) {
-                    // for each message chunk will retrieve the content
-                    const content = chunks.choices[0]?.delta?.content
-                    // if the content exists
-                    if (content) {
-                        //encode the content
-                        const text = encoder.encode(content)
-                        //send it to our controller
-                        controller.enqueue(text)
-                    }
-                }
-                //catch any errors in the process of controller starting and display
-            } catch (error) {
-                controller.error(err)
-            }
-            //closing the stream once done
-            finally {
-                controller.close()
-            }
-        }
-    }
-    )
-    //returning the response stream:
-    return new NextResponse(stream)
-}
+
+    const reply = completion.choices[0].message.content;
+    console.log('Reply from OpenAI:', reply);
+
+    // Translate the reply back to the original language
+    const replyInOriginalLanguage = await translateText(reply, originalLanguage);
+    console.log('Target language for reply:', originalLanguage);
+    console.log('Translated reply:', replyInOriginalLanguage);
+
+    return NextResponse.json({ reply: replyInOriginalLanguage });
+  } catch (error) {
+    console.error('Translation error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+};
+
