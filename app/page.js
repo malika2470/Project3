@@ -1,26 +1,27 @@
 'use client'
 import { Box, Stack, TextField, Button, AppBar, Toolbar, IconButton, Typography, Modal } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import StarIcon from '@mui/icons-material/Star';
 import { firestore, auth, profile } from "@/firebase";
 import { addDoc, collection } from "firebase/firestore";
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
-import { useAuthState } from 'react-firebase-hooks/auth'
-import { useEffect } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 export default function Home() {
 
   //user log in
   const [user] = useAuthState(auth); //connect to user authentication
   const router = useRouter();
-  const userSession = sessionStorage.getItem('user');
+  const userSession = typeof window !== 'undefined' ? sessionStorage.getItem('user') : null; // Only access sessionStorage in the browser
 
   console.log({ user })
 
   const handleLogout = async () => {
     await auth.signOut();
-    sessionStorage.removeItem('user'); // Remove user session on logout
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('user'); // Only access sessionStorage in the browser
+    }
   };
 
   // Initial message state
@@ -43,7 +44,6 @@ export default function Home() {
       ])
     }
   }, [user, userSession]); // Include userSession here
-
 
   const [message, setMessage] = useState("");
 
@@ -239,4 +239,3 @@ export default function Home() {
     </Box>
   );
 }
-
