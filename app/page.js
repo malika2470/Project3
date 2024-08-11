@@ -2,14 +2,48 @@
 import { Box, Stack, TextField, Button, AppBar, Toolbar, IconButton, Typography, Modal } from '@mui/material';
 import { useState } from 'react';
 import StarIcon from '@mui/icons-material/Star';
+import { firestore, auth, profile } from "@/firebase";
+import { addDoc, collection } from "firebase/firestore";
+import { useRouter } from 'next/navigation';
+import { signOut } from 'firebase/auth';
+import { useAuthState } from 'react-firebase-hooks/auth'
+import { useEffect } from 'react';
 
 export default function Home() {
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: 'Hi I am your personalized Assistant, How can I help you today!',
-    },
-  ]);
+
+  //user log in
+  const [user] = useAuthState(auth); //connect to user authentication
+  const router = useRouter();
+  const userSession = sessionStorage.getItem('user');
+
+  console.log({ user })
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    sessionStorage.removeItem('user'); // Remove user session on logout
+  };
+
+  // Initial message state
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    if (!user && !userSession) {
+      setMessages([
+        {
+          role: 'assistant',
+          content: 'Hi I am your personalized Assistant! How can I help you today?',
+        },
+      ])
+    } else {
+      setMessages([
+        {
+          role: 'assistant',
+          content: 'Hi user! I am your personalized Assistant! How can I help you today?',
+        },
+      ])
+    }
+  }, [user]);
+
 
   const [message, setMessage] = useState("");
 
@@ -45,11 +79,29 @@ export default function Home() {
   };
 
   // Feedback Form
-  const [open, setOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
   const [rating, setRating] = useState(0);
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
+  const handleOpen = () => setFeedbackOpen(true);
+
+  const handleClose = async () => {
+    // Save the rating to Firestore
+    if (rating > 0) {
+      try {
+        await addDoc(collection(firestore, "feedback"), {
+          rating: rating,
+          timestamp: new Date()
+        });
+        console.log("Rating saved successfully");
+      } catch (error) {
+        console.error("Error saving rating: ", error);
+      }
+    }
+
+    setFeedbackOpen(false);
+    setRating(0); // Reset rating after submission
+  };
 
   const handleRating = (value) => {
     setRating(value);
@@ -94,8 +146,14 @@ export default function Home() {
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               TechStore Chatbot
             </Typography>
-            <Button color="inherit">Login</Button>
-            <Button color="inherit" onClick={handleOpen}>Close</Button>
+
+            {user ? (
+              <Button color="inherit" onClick={handleLogout}>Logout</Button>
+            ) : (
+              <Button color="inherit" onClick={() => router.push('/sign-in')}>Login</Button>
+            )}
+            <Button color="inherit" onClick={handleOpen}>Close</Button> {/* Close button triggers feedback dialog */}
+
           </Toolbar>
         </AppBar>
 
@@ -145,6 +203,7 @@ export default function Home() {
           <Button
             variant="contained"
             onClick={sendMessage}
+            disabled={message == ''}
             sx={{ bgcolor: '#1e1e1e', '&:hover': { bgcolor: '#2d2d2d' } }}
           >
             Send
@@ -152,7 +211,7 @@ export default function Home() {
         </Stack>
       </Stack>
       <Modal
-        open={open}
+        open={feedbackOpen}
         onClose={handleClose}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
@@ -171,7 +230,7 @@ export default function Home() {
                 </IconButton>
               ))}
             </Stack>
-            <Button variant="contained" onClick={handleClose} sx={{ bgcolor: '#1e1e1e', '&:hover': { bgcolor: '#2d2d2d' } }}>
+            <Button variant="contained" onClick={() => { handleClose() }} disabled={rating === 0} sx={{ bgcolor: '#1e1e1e', '&:hover': { bgcolor: '#2d2d2d' } }}>
               Submit
             </Button>
           </Stack>
