@@ -2,19 +2,46 @@
 import { Box, Stack, TextField, Button, AppBar, Toolbar, IconButton, Typography, Modal } from '@mui/material';
 import { useState } from 'react';
 import StarIcon from '@mui/icons-material/Star';
-import { firestore } from "@/firebase";
-import { getDoc, addDoc } from "firebase/firestore";
-import { collection, doc } from "firebase/firestore";
-
+import { firestore, auth, profile } from "@/firebase";
+import { addDoc, collection } from "firebase/firestore";
+import { useRouter } from 'next/navigation';
+import { signOut } from 'firebase/auth';
+import { useAuthState } from 'react-firebase-hooks/auth'
+import { useEffect } from 'react';
 
 export default function Home() {
+  //user log in
+  const [user] = useAuthState(auth); //connect to user authentication
+  const router = useRouter();
+  const userSession = sessionStorage.getItem('user');
+
+  console.log({ user })
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    sessionStorage.removeItem('user'); // Remove user session on logout
+  };
+
   // Initial message state
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: 'Hi I am your personalized Assistant! How can I help you today?',
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    if (!user && !userSession) {
+      setMessages([
+        {
+          role: 'assistant',
+          content: 'Hi I am your personalized Assistant! How can I help you today?',
+        },
+      ])
+    } else {
+      setMessages([
+        {
+          role: 'assistant',
+          content: 'Hi user! I am your personalized Assistant! How can I help you today?',
+        },
+      ])
+    }
+  }, [user]);
 
   // Message state for user input
   const [message, setMessage] = useState("");
@@ -141,7 +168,12 @@ export default function Home() {
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               TechStore Chatbot
             </Typography>
-            <Button color="inherit" onClick={() => navigate('/signin')}>Login</Button>
+
+            {user ? (
+              <Button color="inherit" onClick={handleLogout}>Logout</Button>
+            ) : (
+              <Button color="inherit" onClick={() => router.push('/sign-in')}>Login</Button>
+            )}
             <Button color="inherit" onClick={handleOpen}>Close</Button> {/* Close button triggers feedback dialog */}
 
           </Toolbar>

@@ -20,13 +20,13 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = !getApps().find(app => app.name === 'main')
+    ? initializeApp(firebaseConfig, 'main')
+    : getApp('main');
 
 // Export the main app's services
 const firestore = getFirestore(app)
 const auth = getAuth(app);
 const db = getFirestore(app);
-
 export { db, auth, app, firestore }
