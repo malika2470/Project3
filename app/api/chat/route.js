@@ -1,3 +1,4 @@
+import 'dotenv/config';  // Add this line at the very top
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
 import { detectLanguage, translateText } from '../../../lib/translation';
