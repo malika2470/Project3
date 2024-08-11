@@ -4,7 +4,6 @@ import { useState } from 'react';
 import StarIcon from '@mui/icons-material/Star';
 
 export default function Home() {
-  // Initial message state
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -12,63 +11,40 @@ export default function Home() {
     },
   ]);
 
-  // Message state for user input
   const [message, setMessage] = useState("");
 
-  // hover function to be used to send our messages in an array to the backend and return a response:
   const sendMessage = async () => {
-    setMessage('')
+    if (!message.trim()) return;
+
+    setMessage('');
     setMessages((messages) => [
       ...messages,
-      //adding the users message
-      { role: "user", content: message },
-      // relaying that users message to the assistant's content
-      { role: "assistant", content: '' }
-    ])
-    //fetching response from api: 
+      { role: 'user', content: message },
+      { role: 'assistant', content: '' }
+    ]);
+
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      // JSON response of our messages array 
-      //creating new array to update the type as state variables might not update in time
-      //converts text to JSON string format and reads the resultant message and decodes it
-      body: JSON.stringify([...messages, { role: 'user', content: message }]),
-    }).then(async (res) => {
+      body: JSON.stringify({ message, targetLanguage: 'en' }),
+    });
 
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      //reads the string and process the contents:
-      let result = ''
-      return reader.read().then(function processText({ done, value }) {
-        // checks if contents has been processed if so return the result
-        if (done) {
-          return result
-        }
-        //else decode the Text and processes the value and create Int8Array if value is empty
-        const text = decoder.decode(value || new Int8Array(), { stream: true })
-        // used to append content to your last message:
-        setMessages((messages) => {
-          // retrieves all the messages except all the last one: 
-          let lastMessage = messages[messages.length - 1]
-          //retrieves all your other messages
-          let otherMessages = messages.slice(0, messages.length - 1)
-          // prints otherMessages with a dictionary containing the last message plus the content data 
-          return [
-            ...otherMessages,
-            {
-              ...lastMessage,
-              content: lastMessage.content + text,
-            },
-          ]
-        })
-        return reader.read().then(processText)
-      })
-    })
-  }
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Response data:', data);
 
-  //Feedback Form
+      setMessages((messages) => [
+        ...messages.slice(0, messages.length - 1),
+        { role: 'assistant', content: data.reply }
+      ]);
+    } else {
+      console.error('Error:', response.statusText);
+    }
+  };
+
+  // Feedback Form
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
 
@@ -86,7 +62,6 @@ export default function Home() {
     transform: 'translate(-50%, -50%)',
     width: 400,
     bgcolor: 'background.paper',
-    //border: '2px solid #000',
     boxShadow: 24,
     p: 4,
     display: 'flex',
@@ -96,33 +71,31 @@ export default function Home() {
 
   return (
     <Box
-      width='100vw'
-      height='100vh'
+      width="100vw"
+      height="100vh"
       display="flex"
       flexDirection="column"
       justifyContent="center"
       alignItems="center"
-      bgcolor="#2d2d2d" //"1e1e1e""background.default"
+      bgcolor="#2d2d2d"
     >
       <Stack
-        direction='column'
-        width='600px'
-        height='700px'
+        direction="column"
+        width="600px"
+        height="700px"
         borderRadius={4}
-        bgcolor="white"//"#2d2d2d"
+        bgcolor="white"
         boxShadow="0 4px 12px rgba(0,0,0,0.5)"
         p={2}
         spacing={3}
       >
         <AppBar position="static" sx={{ bgcolor: "#000000" }}>
           <Toolbar>
-
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               TechStore Chatbot
             </Typography>
             <Button color="inherit">Login</Button>
-            <Button color="inherit" onClick={handleOpen}>Close</Button> {/* Close button triggers feedback dialog */}
-
+            <Button color="inherit" onClick={handleOpen}>Close</Button>
           </Toolbar>
         </AppBar>
 
@@ -138,12 +111,10 @@ export default function Home() {
               width: "8px",
             },
             "&::-webkit-scrollbar-thumb": {
-              backgroundColor: "#dddddd", // Matching scrollbar color
+              backgroundColor: "#dddddd",
               borderRadius: "8px",
-
             },
           }}
-
         >
           {messages.map((msg, index) => (
             <Box
@@ -163,25 +134,21 @@ export default function Home() {
             </Box>
           ))}
         </Stack>
-        <Stack
-          direction={"row"}
-          spacing={2}>
+        <Stack direction="row" spacing={2}>
           <TextField
             label="Enter your message"
-            variant='outlined'
+            variant="outlined"
             fullWidth
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
           <Button
-            variant='contained'
+            variant="contained"
             onClick={sendMessage}
-            //sx={{ bgcolor: "1e1e1e" }}
             sx={{ bgcolor: '#1e1e1e', '&:hover': { bgcolor: '#2d2d2d' } }}
           >
             Send
           </Button>
-
         </Stack>
       </Stack>
       <Modal
@@ -199,12 +166,12 @@ export default function Home() {
               {[1, 2, 3, 4, 5].map((value) => (
                 <IconButton key={value} onClick={() => handleRating(value)}>
                   <StarIcon
-                    sx={{ color: value <= rating ? '#ff5722' : '#ccc' }} // Highlight stars based on rating
+                    sx={{ color: value <= rating ? '#ff5722' : '#ccc' }}
                   />
                 </IconButton>
               ))}
             </Stack>
-            <Button variant="contained" onClick={() => { handleClose() }} sx={{ bgcolor: '#1e1e1e', '&:hover': { bgcolor: '#2d2d2d' } }}>
+            <Button variant="contained" onClick={handleClose} sx={{ bgcolor: '#1e1e1e', '&:hover': { bgcolor: '#2d2d2d' } }}>
               Submit
             </Button>
           </Stack>
@@ -212,4 +179,6 @@ export default function Home() {
       </Modal>
     </Box>
   );
-};
+}
+
+
