@@ -34,3 +34,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Ignore Google Cloud credentials
+/config/second-casing-432120-s6-f572ed3bb09a.json
